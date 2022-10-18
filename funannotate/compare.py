@@ -63,6 +63,9 @@ def main(args):
                         help='Path to funannotate database, $FUNANNOTATE_DB')
     parser.add_argument('--no-progress', dest='progress', action='store_false',
                         help='no progress on multiprocessing')
+    parser.add_argument('--skip_visualizations', action='store_true',
+                        help='Skip visualizations when comparing a large number of genomes')
+    
     args = parser.parse_args(args)
 
     parentdir = os.path.join(os.path.dirname(__file__))
@@ -317,24 +320,26 @@ def main(args):
 
         # draw plots for SM data
         # get totals for determining height of y-axis
-        totals = smdf.sum(numeric_only=True, axis=1)
-        max_num = max(totals)
-        round_max = int(lib.roundup(max_num))
-        diff = round_max - int(max_num)
-        if diff < 100:
-            ymax = round_max + 100
-        else:
-            ymax = round_max
-        if round_max == 100 and diff > 30:
-            ymax = max_num + 5
+        if not args.skip_visualizations:
+            totals = smdf.sum(numeric_only=True, axis=1)
+            max_num = max(totals)
+            round_max = int(lib.roundup(max_num))
+            diff = round_max - int(max_num)
+            if diff < 100:
+                ymax = round_max + 100
+            else:
+                ymax = round_max
+            if round_max == 100 and diff > 30:
+                ymax = max_num + 5
 
         # output to csv
         smdf.transpose().to_csv(os.path.join(args.out, 'secmet', 'SM.summary.results.csv'))
 
         # stackedbar graph
-        if len(args.input) > 1:
-            lib.drawStackedBar(smdf, 'Secondary Metabolism Clusters', SM, ymax, os.path.join(
-                args.out, 'secmet', 'SM.graph.pdf'))
+        if not args.skip_visualizations:
+            if len(args.input) > 1:
+                lib.drawStackedBar(smdf, 'Secondary Metabolism Clusters', SM, ymax, os.path.join(
+                    args.out, 'secmet', 'SM.graph.pdf'))
 
         # create html output
         with open(os.path.join(args.out, 'secmet.html'), 'w') as output:
@@ -365,9 +370,10 @@ def main(args):
     pfamdf = pfamdf[(pfamdf.T != 0).any()]
 
     # make an nmds
-    if len(pfamdf.index) > 1:  # make sure number of species is at least two
-        lib.distance2mds(pfamdf, 'braycurtis', 'PFAM',
-                         os.path.join(args.out, 'pfam', 'PFAM.nmds.pdf'))
+    if not args.skip_visualizations:
+        if len(pfamdf.index) > 1:  # make sure number of species is at least two
+            lib.distance2mds(pfamdf, 'braycurtis', 'PFAM',
+                             os.path.join(args.out, 'pfam', 'PFAM.nmds.pdf'))
 
     # get the PFAM descriptions
     pfamdf2 = pfamdf.transpose().astype(int)
@@ -426,8 +432,9 @@ def main(args):
     # NMDS
     if len(IPRdf.index) > 1:  # count number of species
         if len(IPRdf.columns) > 1:  # count number of IPR domains
-            lib.distance2mds(IPRdf, 'braycurtis', 'InterProScan', os.path.join(
-                args.out, 'interpro', 'InterProScan.nmds.pdf'))
+            if not args.skip_visualizations:
+                lib.distance2mds(IPRdf, 'braycurtis', 'InterProScan', os.path.join(
+                    args.out, 'interpro', 'InterProScan.nmds.pdf'))
 
             # write to csv file
             ipr2 = IPRdf.transpose().astype(int)
@@ -519,33 +526,34 @@ def main(args):
         args.out, 'merops', 'MEROPS.summary.results.csv'))
 
     if not meropsall.empty:
-        # draw plots for merops data
-        # stackedbar graph
-        if len(args.input) > 1:
-            lib.drawStackedBar(meropsShort, 'MEROPS families', MEROPS, ymax, os.path.join(
-                args.out, 'merops', 'MEROPS.graph.pdf'))
+        if not args.skip_visualizations:
+            # draw plots for merops data
+            # stackedbar graph
+            if len(args.input) > 1:
+                lib.drawStackedBar(meropsShort, 'MEROPS families', MEROPS, ymax, os.path.join(
+                    args.out, 'merops', 'MEROPS.graph.pdf'))
 
-        # drawheatmap of all merops families where there are any differences
-        if len(args.input) > 1:
-            stdev = meropsall.std(axis=1)
-            meropsall['stdev'] = stdev
-            if len(meropsall) > 25:
-                df2 = meropsall[meropsall.stdev >= args.heatmap_stdev]
-                lib.log.info("found %i/%i MEROPS familes with stdev >= %f" %
-                             (len(df2), len(meropsall), args.heatmap_stdev))
-            else:
-                df2 = meropsall
-                lib.log.info("found %i MEROPS familes" % (len(df2)))
-            meropsplot = df2.drop('stdev', axis=1)
-            if len(meropsplot) > 0:
-                lib.drawHeatmap(meropsplot, 'BuPu', os.path.join(
-                    args.out, 'merops', 'MEROPS.heatmap.pdf'), 6, False)
+            # drawheatmap of all merops families where there are any differences
+            if len(args.input) > 1:
+                stdev = meropsall.std(axis=1)
+                meropsall['stdev'] = stdev
+                if len(meropsall) > 25:
+                    df2 = meropsall[meropsall.stdev >= args.heatmap_stdev]
+                    lib.log.info("found %i/%i MEROPS familes with stdev >= %f" %
+                                 (len(df2), len(meropsall), args.heatmap_stdev))
+                else:
+                    df2 = meropsall
+                    lib.log.info("found %i MEROPS familes" % (len(df2)))
+                meropsplot = df2.drop('stdev', axis=1)
+                if len(meropsplot) > 0:
+                    lib.drawHeatmap(meropsplot, 'BuPu', os.path.join(
+                        args.out, 'merops', 'MEROPS.heatmap.pdf'), 6, False)
 
-            meropsall = meropsall.astype(int)
-            meropsall.reset_index(inplace=True)
-            meropsall.rename(columns={'index': 'MEROPS'}, inplace=True)
-            meropsall['MEROPS'] = '<a target="_blank" href="https://www.ebi.ac.uk/merops/cgi-bin/famsum?family=' + \
-                meropsall['MEROPS'].astype(str)+'">'+meropsall['MEROPS']+'</a>'
+                meropsall = meropsall.astype(int)
+                meropsall.reset_index(inplace=True)
+                meropsall.rename(columns={'index': 'MEROPS'}, inplace=True)
+                meropsall['MEROPS'] = '<a target="_blank" href="https://www.ebi.ac.uk/merops/cgi-bin/famsum?family=' + \
+                    meropsall['MEROPS'].astype(str)+'">'+meropsall['MEROPS']+'</a>'
 
     # create html output
     with open(os.path.join(args.out, 'merops.html'), 'w') as output:
@@ -605,31 +613,33 @@ def main(args):
         args.out, 'cazy', 'CAZyme.summary.results.csv'))
 
     # draw stacked bar graph for CAZY's
-    if len(args.input) > 1:
-        lib.drawStackedBar(CAZyShort, 'CAZyme families', CAZY,
-                           ymax, os.path.join(args.out, 'cazy', 'CAZy.graph.pdf'))
+    if not args.skip_visualizations:
+        if len(args.input) > 1:
+            lib.drawStackedBar(CAZyShort, 'CAZyme families', CAZY,
+                               ymax, os.path.join(args.out, 'cazy', 'CAZy.graph.pdf'))
 
     # if num of cazys greater than 25, drawheatmap of all CAZys that have standard deviation > X
-    if len(args.input) > 1:
-        stdev = cazyall.std(axis=1)
-        cazyall['stdev'] = stdev
-        if len(cazyall) > 25:
-            df2 = cazyall[cazyall.stdev >= args.heatmap_stdev]
-            lib.log.info("found %i/%i CAZy familes with stdev >= %f" %
-                         (len(df2), len(cazyall), args.heatmap_stdev))
-        else:
-            df2 = cazyall
-            lib.log.info("found %i CAZy familes" % (len(df2)))
-        cazyplot = df2.drop('stdev', axis=1)
-        if len(cazyplot) > 0:
-            lib.drawHeatmap(cazyplot, 'YlOrRd', os.path.join(
-                args.out, 'cazy', 'CAZy.heatmap.pdf'), 4, False)
+    if not args.skip_visualizations:
+        if len(args.input) > 1:
+            stdev = cazyall.std(axis=1)
+            cazyall['stdev'] = stdev
+            if len(cazyall) > 25:
+                df2 = cazyall[cazyall.stdev >= args.heatmap_stdev]
+                lib.log.info("found %i/%i CAZy familes with stdev >= %f" %
+                             (len(df2), len(cazyall), args.heatmap_stdev))
+            else:
+                df2 = cazyall
+                lib.log.info("found %i CAZy familes" % (len(df2)))
+            cazyplot = df2.drop('stdev', axis=1)
+            if len(cazyplot) > 0:
+                lib.drawHeatmap(cazyplot, 'YlOrRd', os.path.join(
+                    args.out, 'cazy', 'CAZy.heatmap.pdf'), 4, False)
 
-        cazyall = cazyall.astype(int)
-        cazyall.reset_index(inplace=True)
-        cazyall.rename(columns={'index': 'CAZy'}, inplace=True)
-        cazyall['CAZy'] = '<a target="_blank" href="http://www.cazy.org/' + \
-            cazyall['CAZy'].astype(str)+'.html">'+cazyall['CAZy']+'</a>'
+            cazyall = cazyall.astype(int)
+            cazyall.reset_index(inplace=True)
+            cazyall.rename(columns={'index': 'CAZy'}, inplace=True)
+            cazyall['CAZy'] = '<a target="_blank" href="http://www.cazy.org/' + \
+                cazyall['CAZy'].astype(str)+'.html">'+cazyall['CAZy']+'</a>'
 
     # create html output
     with open(os.path.join(args.out, 'cazy.html'), 'w') as output:
@@ -654,8 +664,9 @@ def main(args):
         COGSdf['species'] = names
         COGSdf.set_index('species', inplace=True)
         COGSdf2 = COGSdf.div(COGSdf.sum(axis=1), axis=0).multiply(100)
-        lib.donutplot(COGSdf2, resources.COGS, os.path.join(
-            args.out, 'cogs', 'COGS.graph.pdf'))
+        if not args.skip_visualizations:
+            lib.donutplot(COGSdf2, resources.COGS, os.path.join(
+                args.out, 'cogs', 'COGS.graph.pdf'))
 
         # make the csv file more informative
         LongNames = []
@@ -702,8 +713,9 @@ def main(args):
                 sig[names[i]] = len(signalpDict[i])
         sigdf = pd.DataFrame([sig])
         sigdf.transpose().to_csv(os.path.join(args.out, 'signalp', 'signalp.csv'))
-        lib.drawbarplot(sigdf, os.path.join(
-            args.out, 'signalp', 'signalp.pdf'))
+        if not args.skip_visualizations:
+            lib.drawbarplot(sigdf, os.path.join(
+                args.out, 'signalp', 'signalp.pdf'))
 
         # create html output
         with open(os.path.join(args.out, 'signalp.html'), 'w') as output:
@@ -747,8 +759,9 @@ def main(args):
     dfmerged = dfmerged.astype(int)
     #print dfmerged
     if len(dfmerged.columns) > 0:
-        lib.drawHeatmap(dfmerged, 'Blues', os.path.join(
-            args.out, 'tfs', 'TF.heatmap.pdf'), 6, True)
+        if not args.skip_visualizations:
+            lib.drawHeatmap(dfmerged, 'Blues', os.path.join(
+                args.out, 'tfs', 'TF.heatmap.pdf'), 6, True)
     else:
         lib.log.info("No transcription factor IPR domains found")
     # create html output

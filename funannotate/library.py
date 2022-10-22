@@ -5775,6 +5775,42 @@ def parsePhobiusSignalP(phobius, sigP, membrane_annot, secretome_annot):
                 secout.write("{:}\tnote\tSECRETED:SignalP(1-{:})\n".format(k, v[0]))
 
 
+def parseNetGPI(netgpi, anchors):
+    netgpiDict = {}
+    with open(netgpi, 'r') as results:
+        for line in results:
+            line = line.rstrip()
+            if line.startswith('# NetGPI'):
+                version = line.split(' ')[2].split('.')[0]
+                if version != '1':
+                    log.info("CAUTION, Results from more recent version of NetGPI. Check NetGPI output for consistency with function 'parseNetGPI' in library.py.")
+                continue
+            if '\t' in line:
+                cols = line.split('\t')
+                if cols[2] == 'GPI-Anchored':  # then GPI-anchored
+                    ID, seqlength, prediction, omegasite, likelihood, aminoacid = cols[:6]
+                    netgpiDict[ID] = [omegasite, aminoacid, likelihood]
+    with open(anchors, 'w') as anchorsout:
+        for k, v in natsorted(list(netgpiDict.items())):
+            anchorsout.write("{:}\tnote\tGPI-ANCHORED:NetGPI(omega site={:},amino acid={:})\n".format(k, v[0], v[1]))
+
+
+def parseDeepLoc2(loc_in, loc_out):
+    deeplocDict = {}
+    with open(loc_in, 'r') as results:
+        for line in results:
+            line = line.rstrip()
+            if '-T1' in line:
+                cols = line.split(',')
+                ID, localizations, signals = cols[:3]
+                if signals == '':
+                    signals = 'none'
+                deeplocDict[ID] = [localizations, signals]
+    with open(loc_out, 'w') as locout:
+        for k, v in natsorted(list(deeplocDict.items())):
+            locout.write("{:}\tnote\tSUBCELLULAR-LOCATION:DeepLoc2(localizations={:},signals={:})\n".format(k, v[0], v[1]))
+
+
 def n_lower_chars(string):
     return sum(1 for c in string if c.islower())
 

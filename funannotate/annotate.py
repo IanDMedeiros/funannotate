@@ -390,6 +390,10 @@ def main(args):
                         help='antiSMASH results in genbank format')
     parser.add_argument('--signalp',
                         help='signalp results caculted elsewhere')
+    parser.add_argument('--netgpi',
+                        help='path to directory containing pre-computed NetGPI results')
+    parser.add_argument('--deeploc',
+                        help='path to CSV file containing pre-computed DeepLoc2 results')
     parser.add_argument('--renumber_antismash', action='store_true',
                         help='Correct cluster numbering of antiSMASH annotations')
     parser.add_argument('--force', action='store_true',
@@ -1057,6 +1061,57 @@ def main(args):
         num_mem = 0
     lib.log.info('{0:,}'.format(num_secreted) + ' secretome and ' +
                  '{0:,}'.format(num_mem) + ' transmembane annotations added')
+
+
+    # parse NetGPI results downloaded from server
+    netgpi_out = os.path.join(
+        outputdir, 'annotate_misc', 'netgpi.results.txt')
+    gpi_anchor_out = os.path.join(
+        outputdir, 'annotate_misc', 'annotations.gpi_anchors.txt')
+    if args.netgpi:
+        if os.path.isfile(netgpi_out):
+            os.remove(netgpi_out)
+        if not os.path.isdir(args.netgpi):
+            if not 'output_protein_type.txt' in args.netgpi:
+                lib.log.error(
+                    "ERROR, funannotate cannot parse %s as NetGPI output." % args.netgpi)
+            else:
+                shutil.copyfile(args.netgpi, netgpi_out)
+                lib.log.info('Existing NetGPI results found: {:}'.format(netgpi_out))
+        else:
+            protein_type_file = os.path.join(
+                args.netgpi, 'output_protein_type.txt')
+            shutil.copyfile(protein_type_file, netgpi_out)
+            lib.log.info('Existing NetGPI results found: {:}'.format(netgpi_out))
+        lib.parseNetGPI(netgpi_out, gpi_anchor_out)   
+    if lib.checkannotations(gpi_anchor_out):
+        num_gpi = lib.line_count(gpi_anchor_out)
+    else:
+        num_gpi = 0
+    lib.log.info('{0:,}'.format(num_gpi) + ' GPI-anchor annotations added')
+
+
+    # parse results from DeepLoc2 either from local run or downloaded from server
+    deeploc_out = os.path.join(
+        outputdir, 'annotate_misc', 'deeploc.results.csv')
+    deeploc_results = os.path.join(
+        outputdir, 'annotate_misc', 'annotations.deeploc2.txt')
+    if args.deeploc:
+        if os.path.isfile(deeploc_out):
+            os.remove(deeploc_out)
+        if not 'results_' in args.deeploc or not '.csv' in args.deeploc:
+            lib.log.error(
+                "ERROR, funannotate cannot parse %s as DeepLoc2 output." % args.deeploc)
+        else:
+            shutil.copyfile(args.deeploc, deeploc_out)
+            lib.log.info('Existing DeepLoc2 results found: {:}'.format(deeploc_out))
+            lib.parseDeepLoc2(deeploc_out, deeploc_results)   
+            if lib.checkannotations(deeploc_results):
+                num_deeploc = lib.line_count(deeploc_results)
+            else:
+                num_deeploc = 0
+            lib.log.info('{0:,}'.format(num_deeploc) + ' Protein localization annotations added')
+
 
     # interproscan
     IPRCombined = os.path.join(outputdir, 'annotate_misc', 'iprscan.xml')

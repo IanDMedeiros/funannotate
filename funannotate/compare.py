@@ -64,8 +64,9 @@ def main(args):
     parser.add_argument('--no-progress', dest='progress', action='store_false',
                         help='no progress on multiprocessing')
     parser.add_argument('--skip_visualizations', action='store_true',
-                        help='Skip visualizations when comparing a large number of genomes')
-    
+                        help='Skip visualizations (helpful if comparing a large number of genomes)')
+    parser.add_argument('--skip_phylogeny', action='store_true',
+                        help='Skip tree inference')
     args = parser.parse_args(args)
 
     parentdir = os.path.join(os.path.dirname(__file__))
@@ -1237,28 +1238,29 @@ def main(args):
     ############################################
 
     # build phylogeny
-    if not os.path.isfile(os.path.join(args.out, 'phylogeny', 'ML.phylogeny.pdf')):
-        if outgroup:
-            num_phylogeny = len(args.input) + 1
-        else:
-            num_phylogeny = len(args.input)
-        if num_phylogeny > 3:
-            lib.log.info("Inferring phylogeny using {}".format(args.ml_method))
-            folder = os.path.join(args.out, 'protortho')
-            lib.ortho2phylogeny(folder, sco_final, args.num_orthos, busco, args.cpus, args.bootstrap,
-                                phylogeny, outgroup, outgroup_species, outgroup_name, sc_buscos,
-                                args.ml_method, model=args.ml_model)
-            with open(os.path.join(args.out, 'phylogeny.html'), 'w') as output:
-                output.write(lib.HEADER)
-                output.write(lib.PHYLOGENY)
-                output.write(lib.FOOTER)
-        else:
-            lib.log.info(
-                "Skipping RAxML phylogeny as at least 4 taxa are required")
-            with open(os.path.join(args.out, 'phylogeny.html'), 'w') as output:
-                output.write(lib.HEADER)
-                output.write(lib.NOPHYLOGENY)
-                output.write(lib.FOOTER)
+    if not args.skip_phylogeny:
+        if not os.path.isfile(os.path.join(args.out, 'phylogeny', 'ML.phylogeny.pdf')):
+            if outgroup:
+                num_phylogeny = len(args.input) + 1
+            else:
+                num_phylogeny = len(args.input)
+            if num_phylogeny > 3:
+                lib.log.info("Inferring phylogeny using {}".format(args.ml_method))
+                folder = os.path.join(args.out, 'protortho')
+                lib.ortho2phylogeny(folder, sco_final, args.num_orthos, busco, args.cpus, args.bootstrap,
+                                    phylogeny, outgroup, outgroup_species, outgroup_name, sc_buscos,
+                                    args.ml_method, model=args.ml_model)
+                with open(os.path.join(args.out, 'phylogeny.html'), 'w') as output:
+                    output.write(lib.HEADER)
+                    output.write(lib.PHYLOGENY)
+                    output.write(lib.FOOTER)
+            else:
+                lib.log.info(
+                    "Skipping RAxML phylogeny as at least 4 taxa are required")
+                with open(os.path.join(args.out, 'phylogeny.html'), 'w') as output:
+                    output.write(lib.HEADER)
+                    output.write(lib.NOPHYLOGENY)
+                    output.write(lib.FOOTER)
 
     ###########################################
     def addlink(x):

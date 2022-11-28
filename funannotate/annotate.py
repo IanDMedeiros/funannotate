@@ -392,6 +392,8 @@ def main(args):
                         help='signalp results caculted elsewhere')
     parser.add_argument('--netgpi',
                         help='path to directory containing pre-computed NetGPI results')
+    parser.add_argument('--effectorp',
+                        help='path to table file containing pre-computed EffectorP results')
     parser.add_argument('--deeploc',
                         help='path to CSV file containing pre-computed DeepLoc2 results')
     parser.add_argument('--renumber_antismash', action='store_true',
@@ -1093,6 +1095,23 @@ def main(args):
     else:
         num_gpi = 0
     lib.log.info('{0:,}'.format(num_gpi) + ' GPI-anchor annotations added')
+
+
+    # parse EffectorP results from local run
+    effector_out = os.path.join(
+        outputdir, 'annotate_misc', 'annotations.effectors.txt')
+    if args.effectorp:
+        if os.path.isfile(args.effectorp):
+            lib.log.info('Existing EffectorP results found: {:}'.format(args.effectorp))
+            lib.parseEffectorP(args.effectorp, effector_out)
+        else:
+            lib.log.error(
+                "ERROR, funannotate cannot parse %s as EffectorP output." % args.effectorp)
+    if lib.checkannotations(effector_out):
+        num_effector = lib.line_count(effector_out)
+    else:
+        num_effector = 0
+    lib.log.info('{0:,}'.format(num_effector) + ' effector annotations added')
 
 
     # parse results from DeepLoc2 either from local run or downloaded from server

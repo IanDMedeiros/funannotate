@@ -5814,6 +5814,21 @@ def parseNetGPI(netgpi, anchors):
             anchorsout.write("{:}\tnote\tGPI-ANCHORED:NetGPI(omega site={:},amino acid={:})\n".format(k, v[0], v[1]))
 
 
+def parseEffectorP(eff_in, eff_out):
+    effectorDict = {}
+    with open(eff_in, 'r') as results:
+        for line in results:
+            line = line.rstrip()
+            if '-T1' in line:
+                cols = line.split('\t')
+                identification, cytoplasmic, apoplastic, non, prediction = cols[:5]
+                ID = identification.split(' ')[0]
+                effectorDict[ID] = [prediction]
+    with open(eff_out, 'w') as effout:
+        for k, v in natsorted(list(effectorDict.items())):
+            effout.write("{:}\tnote\tEFFECTOR_STATUS:EffectorP({:})\n".format(k, v[0]))
+
+
 def parseDeepLoc2(loc_in, loc_out):
     deeplocDict = {}
     with open(loc_in, 'r') as results:
@@ -5827,7 +5842,7 @@ def parseDeepLoc2(loc_in, loc_out):
                 deeplocDict[ID] = [localizations, signals]
     with open(loc_out, 'w') as locout:
         for k, v in natsorted(list(deeplocDict.items())):
-            locout.write("{:}\tnote\tSUBCELLULAR-LOCATION:DeepLoc2(localizations={:},signals={:})\n".format(k, v[0], v[1]))
+            locout.write("{:}\tnote\tSUBCELLULAR_LOCATION:DeepLoc2(localizations={:},signals={:})\n".format(k, v[0], v[1]))
 
 
 def n_lower_chars(string):

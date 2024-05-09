@@ -523,7 +523,10 @@ def main(args):
     parser.add_argument("--phobius", help="Phobius results")
     parser.add_argument("--eggnog", help="EggNog Mapper annotations")
     parser.add_argument("--eggnog_cache", help="Path to cache file for eggnog mapper")
-    parser.add_argument("--generate_eggnog_cache", action="store_true", help="If called, generates files to build or expand eggnog mapper cache")
+    parser.add_argument(
+        "--generate_eggnog_cache", 
+        action="store_true", 
+        help="Optional argument to use with --eggnog_cache. Generates files to build or expand eggnog mapper cache.")
     parser.add_argument("--busco_db", default="dikarya", help="BUSCO model database")
     parser.add_argument("--p2g", help="NCBI p2g file from previous annotation")
     parser.add_argument(
@@ -1072,7 +1075,7 @@ def main(args):
                     "-m",
                     "diamond",
                     "-i",
-                    os.path.join(outputdir, "annotate_misc", ".emapper.no_annotations.fasta"),
+                    os.path.join(outputdir, "annotate_misc", "eggnog_from_cache.emapper.no_annotations.fasta"),
                     "-o",
                     "eggnog_new_annotations",
                     "--cpu",
@@ -1082,10 +1085,20 @@ def main(args):
                     cmd.append("--md5")
                 lib.runSubprocess(newcmd, os.path.join(outputdir, "annotate_misc"), lib.log)
                 '''
-                So far, I have modified the program to use an eggnog mapper cache. Now, I have to:
-                A. Make a "clean" copy without md5sums of the novel annotation results.
-                B. Merge the output files of the cache and non-cache results.
-                C. Consolidate the novel sequences into a new version of the cache.
+                <<So far, I have modified the program to use an eggnog mapper cache. Now, I have to:>>
+                if args.generate_eggnog_cache:
+                    pre_cache = os.path.join(os.path.dirname(str(args.eggnog_cache), "annotations_to_cache")
+                    if not os.path.isdir(pre_cache):
+                        os.makedirs(pre_cache)
+                    shutil.copy(
+                        os.path.join(outputdir, "annotate_misc", "<<eggnog_new_annotations_with_md5>>"), 
+                        os.path.join(pre_cache, str(args.isolate), "<<eggnog_new_annotations_with_md5>>")
+                        )
+                    <<now remove the md5 column from the original file in annotate_misc>>
+                    data = pandas.read_csv('<<eggnog_all_annotations.txt',sep='\t')
+                    clean = data.pop('md5')
+                    <<write clean to file>>
+                <<merge the output files of the cache and non-cache results under the file name used without the cache arguments
                 '''
             else:
                 lib.runSubprocess(cmd, os.path.join(outputdir, "annotate_misc"), lib.log)

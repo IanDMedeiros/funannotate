@@ -1094,7 +1094,7 @@ def main(args):
                         new_eggnog, 
                         os.path.join(pre_cache, str(args.isolate), "eggnog_new_annotations.emapper.annotations")
                         )
-                    data = pd.read_csv(new_annotations, sep='\t')
+                    data = pd.read_csv(new_eggnog, sep='\t')
                     clean = data.pop('md5')
                     cached = pd.read_csv(os.path.join(outputdir, "annotate_misc", "eggnog_from_cache.emapper.annotations.fasta"), sep='\t')
                     clean_all = pd.concat([cached, clean], axis=0)

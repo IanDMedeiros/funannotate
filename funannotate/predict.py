@@ -2727,7 +2727,15 @@ If you can run GeneMark outside funannotate you can add with --genemark_gtf opti
     else:
         with open(cleanTRNA, "w") as outfile:
             outfile.write("##gff-version 3\n")
-
+            
+    # search for rRNAs
+    rRNAout = os.path.join(args.out, "predict_misc", "rRNA.gff3")
+    lib.log.info("Predicting rRNAs")
+    if not os.path.isfile(rRNAout):
+        rrna_result = lib.findrRNAs()<<make function to wrap barrnap and ITSx>>
+    else:
+        rrna_result = True
+    
     # load EVM models and tRNAscan models, output tbl annotation file
     lib.log.info("Generating GenBank tbl annotation file")
     prefix = args.name.replace("_", "")

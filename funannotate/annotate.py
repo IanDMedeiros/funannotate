@@ -9,6 +9,7 @@ import sys
 import os
 import subprocess
 import shutil
+import pandas as pd
 import argparse
 import re
 import uuid
@@ -1082,23 +1083,23 @@ def main(args):
                     str(args.cpus)
                 ]
                 if args.generate_eggnog_cache:
-                    cmd.append("--md5")
+                    newcmd.append("--md5")
                 lib.runSubprocess(newcmd, os.path.join(outputdir, "annotate_misc"), lib.log)
-                '''
                 if args.generate_eggnog_cache:
                     pre_cache = os.path.join(os.path.dirname(str(args.eggnog_cache), "annotations_to_cache")
                     if not os.path.isdir(pre_cache):
                         os.makedirs(pre_cache)
+                    new_eggnog = os.path.join(outputdir, "annotate_misc", "eggnog_new_annotations.emapper.annotations")
                     shutil.copy(
-                        os.path.join(outputdir, "annotate_misc", "<<eggnog_new_annotations.emapper.annotations>>"), 
-                        os.path.join(pre_cache, str(args.isolate), "<<eggnog_new_annotations.emapper.annotations>>")
+                        new_eggnog, 
+                        os.path.join(pre_cache, str(args.isolate), "eggnog_new_annotations.emapper.annotations")
                         )
-                    <<now remove the md5 column from the original file in annotate_misc>>
-                    data = pandas.read_csv('<<eggnog_all_annotations.txt',sep='\t')
+                    data = pd.read_csv(new_annotations, sep='\t')
                     clean = data.pop('md5')
-                    <<write clean to file>>
-                <<merge the output files of the cache (prefix.emapper.annotations) and non-cache results at os.path.join(outputdir, "annotate_misc", "eggnog.emapper.annotations")
-                '''
+                    cached = pd.read_csv(os.path.join(outputdir, "annotate_misc", "eggnog_from_cache.emapper.annotations.fasta"), sep='\t')
+                    clean_all = pd.concat([cached, clean], axis=0)
+                    final_eggnog = os.path.join(outputdir, "annotate_misc", "eggnog.emapper.annotations")
+                    clean_all.to_csv(final_eggnog, sep="\t")
             else:
                 lib.runSubprocess(cmd, os.path.join(outputdir, "annotate_misc"), lib.log)
             if os.path.isdir(scratch_dir):

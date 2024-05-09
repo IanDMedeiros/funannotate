@@ -1070,13 +1070,13 @@ def main(args):
                     "--cache",
                     str(args.eggnog_cache)
                 ]
-                lib.runSubprocess(cachecmd, os.path.join(outputdir, "annotate_misc"), lib.log)
+                lib.runSubprocess(cachecmd, args.tmpdir, lib.log)
                 newcmd = [
                     "emapper.py",
                     "-m",
                     "diamond",
                     "-i",
-                    os.path.join(outputdir, "annotate_misc", "cached_annotations.emapper.no_annotations.fasta"),
+                    os.path.join(args.tmpdir, "cached_annotations.emapper.no_annotations.fasta"),
                     "-o",
                     "new_annotations",
                     "--cpu",
@@ -1084,12 +1084,12 @@ def main(args):
                 ]
                 if args.generate_eggnog_cache:
                     newcmd.append("--md5")
-                lib.runSubprocess(newcmd, os.path.join(outputdir, "annotate_misc"), lib.log)
-                new_eggnog = os.path.join(outputdir, "annotate_misc", "new_annotations.emapper.annotations")
-                cached_eggnog = os.path.join(outputdir, "annotate_misc", "cached_annotations.emapper.annotations")
+                lib.runSubprocess(newcmd, args.tmpdir, lib.log)
+                new_eggnog = os.path.join(args.tmpdir, "new_annotations.emapper.annotations")
+                cached_eggnog = os.path.join(args.tmpdir, "cached_annotations.emapper.annotations")
                 final_eggnog = os.path.join(outputdir, "annotate_misc", "eggnog.emapper.annotations")
                 if args.generate_eggnog_cache:
-                    pre_cache = os.path.join(os.path.dirname(str(args.eggnog_cache), "annotations_to_cache")
+                    pre_cache = os.path.join(os.path.dirname(args.eggnog_cache), "annotations_to_cache")
                     if not os.path.isdir(pre_cache):
                         os.makedirs(pre_cache)
                     shutil.copy(

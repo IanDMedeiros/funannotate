@@ -1085,20 +1085,19 @@ def main(args):
                     cmd.append("--md5")
                 lib.runSubprocess(newcmd, os.path.join(outputdir, "annotate_misc"), lib.log)
                 '''
-                <<So far, I have modified the program to use an eggnog mapper cache. Now, I have to:>>
                 if args.generate_eggnog_cache:
                     pre_cache = os.path.join(os.path.dirname(str(args.eggnog_cache), "annotations_to_cache")
                     if not os.path.isdir(pre_cache):
                         os.makedirs(pre_cache)
                     shutil.copy(
-                        os.path.join(outputdir, "annotate_misc", "<<eggnog_new_annotations_with_md5>>"), 
-                        os.path.join(pre_cache, str(args.isolate), "<<eggnog_new_annotations_with_md5>>")
+                        os.path.join(outputdir, "annotate_misc", "<<eggnog_new_annotations.emapper.annotations>>"), 
+                        os.path.join(pre_cache, str(args.isolate), "<<eggnog_new_annotations.emapper.annotations>>")
                         )
                     <<now remove the md5 column from the original file in annotate_misc>>
                     data = pandas.read_csv('<<eggnog_all_annotations.txt',sep='\t')
                     clean = data.pop('md5')
                     <<write clean to file>>
-                <<merge the output files of the cache and non-cache results under the file name used without the cache arguments
+                <<merge the output files of the cache (prefix.emapper.annotations) and non-cache results at os.path.join(outputdir, "annotate_misc", "eggnog.emapper.annotations")
                 '''
             else:
                 lib.runSubprocess(cmd, os.path.join(outputdir, "annotate_misc"), lib.log)

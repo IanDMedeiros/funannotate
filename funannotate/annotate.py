@@ -1064,7 +1064,7 @@ def main(args):
                     "-i",
                     Proteins,
                     "-o",
-                    "eggnog_from_cache",
+                    "cached_annotations",
                     "--cpu",
                     str(args.cpus),
                     "--cache",
@@ -1076,29 +1076,35 @@ def main(args):
                     "-m",
                     "diamond",
                     "-i",
-                    os.path.join(outputdir, "annotate_misc", "eggnog_from_cache.emapper.no_annotations.fasta"),
+                    os.path.join(outputdir, "annotate_misc", "cached_annotations.emapper.no_annotations.fasta"),
                     "-o",
-                    "eggnog_new_annotations",
+                    "new_annotations",
                     "--cpu",
                     str(args.cpus)
                 ]
                 if args.generate_eggnog_cache:
                     newcmd.append("--md5")
                 lib.runSubprocess(newcmd, os.path.join(outputdir, "annotate_misc"), lib.log)
+                new_eggnog = os.path.join(outputdir, "annotate_misc", "new_annotations.emapper.annotations")
+                cached_eggnog = os.path.join(outputdir, "annotate_misc", "cached_annotations.emapper.annotations")
+                final_eggnog = os.path.join(outputdir, "annotate_misc", "eggnog.emapper.annotations")
                 if args.generate_eggnog_cache:
                     pre_cache = os.path.join(os.path.dirname(str(args.eggnog_cache), "annotations_to_cache")
                     if not os.path.isdir(pre_cache):
                         os.makedirs(pre_cache)
-                    new_eggnog = os.path.join(outputdir, "annotate_misc", "eggnog_new_annotations.emapper.annotations")
                     shutil.copy(
                         new_eggnog, 
-                        os.path.join(pre_cache, str(args.isolate), "eggnog_new_annotations.emapper.annotations")
+                        os.path.join(pre_cache, str(args.isolate), "new_annotations.emapper.annotations")
                         )
-                    data = pd.read_csv(new_eggnog, sep='\t')
-                    clean = data.pop('md5')
-                    cached = pd.read_csv(os.path.join(outputdir, "annotate_misc", "eggnog_from_cache.emapper.annotations.fasta"), sep='\t')
+                    new = pd.read_csv(new_eggnog, sep='\t')
+                    clean = new.pop('md5')
+                    cached = pd.read_csv(cached_eggnog, sep='\t')
                     clean_all = pd.concat([cached, clean], axis=0)
-                    final_eggnog = os.path.join(outputdir, "annotate_misc", "eggnog.emapper.annotations")
+                    clean_all.to_csv(final_eggnog, sep="\t")
+                else:
+                    new = pd.read_csv(new_eggnog, sep='\t')
+                    cached = pd.read_csv(cached_eggnog), sep='\t')
+                    clean_all = pd.concat([cached, new], axis=0)
                     clean_all.to_csv(final_eggnog, sep="\t")
             else:
                 lib.runSubprocess(cmd, os.path.join(outputdir, "annotate_misc"), lib.log)

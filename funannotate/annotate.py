@@ -522,6 +522,8 @@ def main(args):
     parser.add_argument("--force", action="store_true", help="Over-write output folder")
     parser.add_argument("--phobius", help="Phobius results")
     parser.add_argument("--eggnog", help="EggNog Mapper annotations")
+    parser.add_argument("--eggnog_cache", help="Path to cache file for eggnog mapper")
+    parser.add_argument("--generate_eggnog_cache", action="store_true", help="If called, generates files to build or expand eggnog mapper cache")
     parser.add_argument("--busco_db", default="dikarya", help="BUSCO model database")
     parser.add_argument("--p2g", help="NCBI p2g file from previous annotation")
     parser.add_argument(
@@ -1050,7 +1052,43 @@ def main(args):
             if parse_version(get_emapper_version()) >= parse_version("2.1.4"):
                 if parse_version(lib.getDiamondVersion()) < parse_version("2.0.11"):
                     cmd += ["--dmnd_iterate", "no"]
-            lib.runSubprocess(cmd, os.path.join(outputdir, "annotate_misc"), lib.log)
+            if args.eggnog_cache:
+                cachecmd = [
+                    "emapper.py",
+                    "-m",
+                    "cache",
+                    "-i",
+                    Proteins,
+                    "-o",
+                    "eggnog_from_cache",
+                    "--cpu",
+                    str(args.cpus),
+                    "--cache",
+                    str(args.eggnog_cache)
+                ]
+                lib.runSubprocess(cachecmd, os.path.join(outputdir, "annotate_misc"), lib.log)
+                newcmd = [
+                    "emapper.py",
+                    "-m",
+                    "diamond",
+                    "-i",
+                    os.path.join(outputdir, "annotate_misc", ".emapper.no_annotations.fasta"),
+                    "-o",
+                    "eggnog_new_annotations",
+                    "--cpu",
+                    str(args.cpus)
+                ]
+                if args.generate_eggnog_cache:
+                    cmd.append("--md5")
+                lib.runSubprocess(newcmd, os.path.join(outputdir, "annotate_misc"), lib.log)
+                '''
+                So far, I have modified the program to use an eggnog mapper cache. Now, I have to:
+                A. Make a "clean" copy without md5sums of the novel annotation results.
+                B. Merge the output files of the cache and non-cache results.
+                C. Consolidate the novel sequences into a new version of the cache.
+                '''
+            else:
+                lib.runSubprocess(cmd, os.path.join(outputdir, "annotate_misc"), lib.log)
             if os.path.isdir(scratch_dir):
                 shutil.rmtree(scratch_dir)
         else:

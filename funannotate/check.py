@@ -4,7 +4,7 @@
 import sys
 import os
 import re
-import pkg_resources
+import importlib.metadata
 import subprocess
 import errno
 import shutil
@@ -35,7 +35,7 @@ def checkPerlModule(mod):
 
 def checkPyModule(mod):
     try:
-        vers = pkg_resources.get_distribution(mod).version
+        vers = importlib.metadata.version(mod)
     except pkg_resources.DistributionNotFound:
         vers = False
     return vers

@@ -8,12 +8,12 @@ import os
 import importlib
 import subprocess
 import funannotate
-from pkg_resources import get_distribution
+import importlib.metadata
 
 global package_name
 global __version__
 package_name = 'funannotate'
-__version__ = get_distribution(package_name).version
+__version__ = importlib.metadata.version(package_name)
 
 default_help = """
 Usage:       {:} <command> <arguments>
